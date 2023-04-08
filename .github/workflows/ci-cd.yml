@@ -23,7 +23,7 @@ jobs:
 
       # init and download dependencies
       - name: Init and download dependencies
-        run: go mod init && go mod download && go mod tidy
+        run: go mod init financial-api && go mod download && go mod tidy
 
       # install swag CLI
       - name: Install Swag CLI
