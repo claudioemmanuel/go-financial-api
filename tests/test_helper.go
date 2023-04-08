@@ -24,3 +24,10 @@ func SetupTestDB(t *testing.T) *gorm.DB {
 
 	return db
 }
+
+func CleanTestDB(t *testing.T, db *gorm.DB) {
+	err := db.Migrator().DropTable(&entities.User{})
+	if err != nil {
+		t.Fatalf("Failed to drop the test database: %v", err.Error())
+	}
+}

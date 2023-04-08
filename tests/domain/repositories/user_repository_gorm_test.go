@@ -13,6 +13,7 @@ import (
 
 func TestUserRepository_Create(t *testing.T) {
 	db := h.SetupTestDB(t)
+	defer h.CleanTestDB(t, db)
 
 	userRepo := gorm.NewUserRepositoryGorm(db)
 
@@ -28,6 +29,7 @@ func TestUserRepository_Create(t *testing.T) {
 
 func TestUserRepository_FindAll(t *testing.T) {
 	db := h.SetupTestDB(t)
+	defer h.CleanTestDB(t, db)
 
 	userRepo := gorm.NewUserRepositoryGorm(db)
 
