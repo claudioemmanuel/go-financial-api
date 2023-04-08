@@ -1,0 +1,140 @@
+definitions:
+  entities.Error:
+    properties:
+      code:
+        type: integer
+      message:
+        type: string
+    type: object
+  entities.User:
+    properties:
+      created_at:
+        type: string
+      email:
+        type: string
+      first_name:
+        type: string
+      id:
+        type: integer
+      last_name:
+        type: string
+      updated_at:
+        type: string
+    type: object
+info:
+  contact: {}
+paths:
+  /api/users:
+    get:
+      consumes:
+      - application/json
+      description: Get all users
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: '['
+          schema:
+            items:
+              $ref: '#/definitions/entities.User'
+            type: array
+        "500":
+          description: '{ \"code\": 500, \"message\": \"Internal Server Error\" }'
+          schema:
+            $ref: '#/definitions/entities.Error'
+      summary: Get all users
+      tags:
+      - users
+    post:
+      consumes:
+      - application/json
+      description: Create a user with the given input data
+      parameters:
+      - description: User
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/entities.User'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: '{'
+          schema:
+            $ref: '#/definitions/entities.User'
+        "400":
+          description: '{ \"code\": 400, \"message\": \"Bad Request\" }'
+          schema:
+            $ref: '#/definitions/entities.Error'
+        "500":
+          description: '{ \"code\": 500, \"message\": \"Internal Server Error\" }'
+          schema:
+            $ref: '#/definitions/entities.Error'
+      summary: Create a user
+      tags:
+      - users
+  /api/users/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a user with the given input data
+      parameters:
+      - description: User ID
+        format: int64
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: '{ \"code\": 400, \"message\": \"Bad Request\" }'
+          schema:
+            $ref: '#/definitions/entities.Error'
+        "500":
+          description: '{ \"code\": 500, \"message\": \"Internal Server Error\" }'
+          schema:
+            $ref: '#/definitions/entities.Error'
+      summary: Delete a user
+      tags:
+      - users
+    put:
+      consumes:
+      - application/json
+      description: Update a user with the given input data
+      parameters:
+      - description: User ID
+        format: int64
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: User
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/entities.User'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: '{'
+          schema:
+            $ref: '#/definitions/entities.User'
+        "400":
+          description: '{ \"code\": 400, \"message\": \"Bad Request\" }'
+          schema:
+            $ref: '#/definitions/entities.Error'
+        "500":
+          description: '{ \"code\": 500, \"message\": \"Internal Server Error\" }'
+          schema:
+            $ref: '#/definitions/entities.Error'
+      summary: Update a user
+      tags:
+      - users
+swagger: "2.0"

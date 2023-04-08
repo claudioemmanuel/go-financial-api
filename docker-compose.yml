@@ -1,0 +1,44 @@
+version: '3.9'
+
+services:
+   app:
+     build:
+       context: .
+       dockerfile: .docker/Dockerfile
+     ports:
+       - "8080:8080"
+     environment:
+       - PORT=8080
+       - DB_HOST=db
+       - DB_PORT=5432
+       - DB_USER=root
+       - DB_PASSWORD=root
+       - DB_NAME=financial
+       - GIN_TRUSTED_PROXIES=""
+     depends_on:
+       - db
+     networks:
+       - financial
+     volumes:
+       - go-cache:/root/.cache/go-build
+
+   db:
+     image: "postgres:latest"
+     ports:
+       - "5432:5432"
+     environment:
+       - POSTGRES_USER=root
+       - POSTGRES_PASSWORD=root
+       - POSTGRES_DB=financial
+     volumes:
+       - pgdata:/var/lib/postgresql/data
+     networks:
+       - financial
+
+volumes:
+   pgdata:
+   go-cache:
+
+networks:
+   financial:
+     driver: bridge

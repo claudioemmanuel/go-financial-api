@@ -1,0 +1,36 @@
+# Binaries, build artifacts, and dependencies
+*.exe
+*.dll
+*.so
+*.dylib
+*.a
+*.o
+*.out
+*.log
+*.swp
+/vendor/
+/bin/
+/obj/
+
+# Go build artifacts
+*.test
+*.test.exe
+dist/
+
+# Go module cache
+$GOPATH/pkg/mod
+go.sum
+go.mod
+
+# Docker artifacts
+.dockerignore
+*.dockerfile
+
+# Visual Studio Code
+.vscode/
+
+# Environment variables
+.env
+
+# macOS files
+.DS_Store
