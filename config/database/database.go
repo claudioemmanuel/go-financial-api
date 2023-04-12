@@ -46,18 +46,10 @@ func Connect() (*gorm.DB, error) {
 		return nil, fmt.Errorf("could not ping database: %v", err)
 	}
 
-	return db, nil
-}
-
-func (d DatabaseConfig) StartDB() (*gorm.DB, error) {
-	db, err := Connect()
-	if err != nil {
-		return nil, err
-	}
-
+	// Migrate the database
 	err = Migrate(db)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("could not migrate database: %v", err)
 	}
 
 	return db, nil

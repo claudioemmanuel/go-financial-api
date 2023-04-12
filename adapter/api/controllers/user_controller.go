@@ -2,10 +2,12 @@ package controllers
 
 import (
 	"net/http"
+	"strconv"
 
 	"financial-api/application/dtos"
 	"financial-api/application/services"
 	"financial-api/domain/entities"
+	"financial-api/utils"
 
 	"github.com/gin-gonic/gin"
 )
@@ -52,9 +54,9 @@ func (c *UserController) Create(ctx *gin.Context) {
 	}
 
 	user := entities.User{
-		FirstName: userDto.FirstName,
-		LastName:  userDto.LastName,
-		Email:     userDto.Email,
+		Name:     userDto.Name,
+		Email:    userDto.Email,
+		Password: userDto.Password,
 	}
 
 	err = c.userService.Create(&user)
@@ -76,6 +78,7 @@ func (c *UserController) Create(ctx *gin.Context) {
 // @Failure 400 {object} entities.Error
 // @Failure 500 {object} entities.Error
 // @Router /api/users/{id} [put]
+// @Security ApiKeyAuth
 func (c *UserController) Update(ctx *gin.Context) {
 	var userDto dtos.UserDTO
 	err := ctx.ShouldBindJSON(&userDto)
@@ -85,9 +88,8 @@ func (c *UserController) Update(ctx *gin.Context) {
 	}
 
 	user := entities.User{
-		FirstName: userDto.FirstName,
-		LastName:  userDto.LastName,
-		Email:     userDto.Email,
+		Name:  userDto.Name,
+		Email: userDto.Email,
 	}
 
 	err = c.userService.Update(&user)
@@ -104,29 +106,60 @@ func (c *UserController) Update(ctx *gin.Context) {
 // @Accept  json
 // @Produce  json
 // @Param id path int true "User ID"
-// @Success 200 {object} entities.User
+// @Success 204 {object} entities.User
 // @Failure 400 {object} entities.Error
 // @Failure 500 {object} entities.Error
 // @Router /api/users/{id} [delete]
 func (c *UserController) Delete(ctx *gin.Context) {
-	var userDto dtos.UserDTO
-	err := ctx.ShouldBindJSON(&userDto)
+	id := ctx.Param("id")
+
+	newId, err := strconv.Atoi(id)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	user := entities.User{
-		FirstName: userDto.FirstName,
-		LastName:  userDto.LastName,
-		Email:     userDto.Email,
-	}
-
-	err = c.userService.Delete(&user)
-	if err != nil {
+	if err := c.userService.Delete(newId); err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
 	ctx.JSON(http.StatusNoContent, nil)
+}
+
+// @Summary Login
+// @Description Login with the given input data
+// @Accept  json
+// @Produce  json
+// @Param user body dtos.LoginDTO true "Login"
+// @Success 200 {object} entities.JwtToken
+// @Failure 401 {object} entities.Error
+// @Failure 500 {object} entities.Error
+// @Router /api/login [post]
+func (c *UserController) Login(ctx *gin.Context) {
+	var loginInput dtos.LoginDTO
+
+	if err := ctx.ShouldBindJSON(&loginInput); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	user, err := c.userService.Login(loginInput.Username, loginInput.Password)
+	if err != nil {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		return
+	}
+
+	if user == nil {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
+		return
+	}
+
+	token, err := utils.GenerateToken(loginInput.Username)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"token": token})
 }

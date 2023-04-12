@@ -2,6 +2,7 @@ package api
 
 import (
 	_ "financial-api/docs"
+	"financial-api/middleware"
 
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
@@ -18,22 +19,29 @@ func RegisterRoutes(r *gin.Engine, userService *services.UserService) {
 	// API
 	api := r.Group("/api")
 	{
+		// Health check
 		api.GET("/ping", func(c *gin.Context) {
 			c.JSON(200, gin.H{
 				"message": "pong",
 			})
 		})
 
-		api.GET("/users", userController.GetAll)
-		api.POST("/users", userController.Create)
-		api.PUT("/users/:id", userController.Update)
-		api.DELETE("/users/:id", userController.Delete)
+		// Login
+		api.POST("/login", userController.Login)
+
+		// Protected routes
+		protected := api.Group("/protected")
+		protected.Use(middleware.AuthRequired())
+		{
+			// Users
+			protected.GET("/users", userController.GetAll)
+			protected.POST("/users", userController.Create)
+			protected.PUT("/users/:id", userController.Update)
+			protected.DELETE("/users/:id", userController.Delete)
+		}
 	}
 
-	// Serve swagger.json
-	// r.GET("/swagger/json", func(c *gin.Context) {
-	// 	c.File("./docs/swagger.json")
-	// })
+	r.POST("/users", userController.Create)
 
 	// Swagger
 	swaggerConfig := &ginSwagger.Config{
