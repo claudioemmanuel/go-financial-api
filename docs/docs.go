@@ -16,6 +16,49 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/api/login": {
+            "post": {
+                "description": "Login with the given input data",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Login",
+                "parameters": [
+                    {
+                        "description": "Login",
+                        "name": "user",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dtos.LoginDTO"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/entities.JwtToken"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/entities.Error"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/entities.Error"
+                        }
+                    }
+                }
+            }
+        },
         "/api/users": {
             "get": {
                 "description": "Get all users",
@@ -25,13 +68,10 @@ const docTemplate = `{
                 "produces": [
                     "application/json"
                 ],
-                "tags": [
-                    "users"
-                ],
                 "summary": "Get all users",
                 "responses": {
                     "200": {
-                        "description": "[",
+                        "description": "OK",
                         "schema": {
                             "type": "array",
                             "items": {
@@ -40,7 +80,7 @@ const docTemplate = `{
                         }
                     },
                     "500": {
-                        "description": "{ \\\"code\\\": 500, \\\"message\\\": \\\"Internal Server Error\\\" }",
+                        "description": "Internal Server Error",
                         "schema": {
                             "$ref": "#/definitions/entities.Error"
                         }
@@ -48,17 +88,14 @@ const docTemplate = `{
                 }
             },
             "post": {
-                "description": "Create a user with the given input data",
+                "description": "Create a new user with the given input data",
                 "consumes": [
                     "application/json"
                 ],
                 "produces": [
                     "application/json"
                 ],
-                "tags": [
-                    "users"
-                ],
-                "summary": "Create a user",
+                "summary": "Create a new user",
                 "parameters": [
                     {
                         "description": "User",
@@ -72,19 +109,13 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "201": {
-                        "description": "{",
+                        "description": "Created",
                         "schema": {
                             "$ref": "#/definitions/entities.User"
                         }
                     },
                     "400": {
-                        "description": "{ \\\"code\\\": 400, \\\"message\\\": \\\"Bad Request\\\" }",
-                        "schema": {
-                            "$ref": "#/definitions/entities.Error"
-                        }
-                    },
-                    "500": {
-                        "description": "{ \\\"code\\\": 500, \\\"message\\\": \\\"Internal Server Error\\\" }",
+                        "description": "Bad Request",
                         "schema": {
                             "$ref": "#/definitions/entities.Error"
                         }
@@ -94,6 +125,11 @@ const docTemplate = `{
         },
         "/api/users/{id}": {
             "put": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
                 "description": "Update a user with the given input data",
                 "consumes": [
                     "application/json"
@@ -101,14 +137,10 @@ const docTemplate = `{
                 "produces": [
                     "application/json"
                 ],
-                "tags": [
-                    "users"
-                ],
                 "summary": "Update a user",
                 "parameters": [
                     {
                         "type": "integer",
-                        "format": "int64",
                         "description": "User ID",
                         "name": "id",
                         "in": "path",
@@ -126,19 +158,19 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "{",
+                        "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/entities.User"
                         }
                     },
                     "400": {
-                        "description": "{ \\\"code\\\": 400, \\\"message\\\": \\\"Bad Request\\\" }",
+                        "description": "Bad Request",
                         "schema": {
                             "$ref": "#/definitions/entities.Error"
                         }
                     },
                     "500": {
-                        "description": "{ \\\"code\\\": 500, \\\"message\\\": \\\"Internal Server Error\\\" }",
+                        "description": "Internal Server Error",
                         "schema": {
                             "$ref": "#/definitions/entities.Error"
                         }
@@ -153,14 +185,10 @@ const docTemplate = `{
                 "produces": [
                     "application/json"
                 ],
-                "tags": [
-                    "users"
-                ],
                 "summary": "Delete a user",
                 "parameters": [
                     {
                         "type": "integer",
-                        "format": "int64",
                         "description": "User ID",
                         "name": "id",
                         "in": "path",
@@ -168,17 +196,20 @@ const docTemplate = `{
                     }
                 ],
                 "responses": {
-                    "204": {
-                        "description": "No Content"
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/entities.User"
+                        }
                     },
                     "400": {
-                        "description": "{ \\\"code\\\": 400, \\\"message\\\": \\\"Bad Request\\\" }",
+                        "description": "Bad Request",
                         "schema": {
                             "$ref": "#/definitions/entities.Error"
                         }
                     },
                     "500": {
-                        "description": "{ \\\"code\\\": 500, \\\"message\\\": \\\"Internal Server Error\\\" }",
+                        "description": "Internal Server Error",
                         "schema": {
                             "$ref": "#/definitions/entities.Error"
                         }
@@ -188,6 +219,17 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "dtos.LoginDTO": {
+            "type": "object",
+            "properties": {
+                "password": {
+                    "type": "string"
+                },
+                "username": {
+                    "type": "string"
+                }
+            }
+        },
         "entities.Error": {
             "type": "object",
             "properties": {
@@ -195,6 +237,14 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "entities.JwtToken": {
+            "type": "object",
+            "properties": {
+                "token": {
                     "type": "string"
                 }
             }

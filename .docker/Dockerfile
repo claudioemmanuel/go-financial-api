@@ -26,6 +26,9 @@ COPY . .
 # Build the Go app
 RUN go build -o main .
 
+# Generate the swagger docs
+RUN swag init -o ./docs
+
 # Expose the application's port
 EXPOSE 8080
 

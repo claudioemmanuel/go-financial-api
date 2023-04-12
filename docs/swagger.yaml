@@ -1,9 +1,21 @@
 definitions:
+  dtos.LoginDTO:
+    properties:
+      password:
+        type: string
+      username:
+        type: string
+    type: object
   entities.Error:
     properties:
       code:
         type: integer
       message:
+        type: string
+    type: object
+  entities.JwtToken:
+    properties:
+      token:
         type: string
     type: object
   entities.User:
@@ -24,6 +36,34 @@ definitions:
 info:
   contact: {}
 paths:
+  /api/login:
+    post:
+      consumes:
+      - application/json
+      description: Login with the given input data
+      parameters:
+      - description: Login
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/dtos.LoginDTO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entities.JwtToken'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/entities.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/entities.Error'
+      summary: Login
   /api/users:
     get:
       consumes:
@@ -33,22 +73,20 @@ paths:
       - application/json
       responses:
         "200":
-          description: '['
+          description: OK
           schema:
             items:
               $ref: '#/definitions/entities.User'
             type: array
         "500":
-          description: '{ \"code\": 500, \"message\": \"Internal Server Error\" }'
+          description: Internal Server Error
           schema:
             $ref: '#/definitions/entities.Error'
       summary: Get all users
-      tags:
-      - users
     post:
       consumes:
       - application/json
-      description: Create a user with the given input data
+      description: Create a new user with the given input data
       parameters:
       - description: User
         in: body
@@ -60,20 +98,14 @@ paths:
       - application/json
       responses:
         "201":
-          description: '{'
+          description: Created
           schema:
             $ref: '#/definitions/entities.User'
         "400":
-          description: '{ \"code\": 400, \"message\": \"Bad Request\" }'
+          description: Bad Request
           schema:
             $ref: '#/definitions/entities.Error'
-        "500":
-          description: '{ \"code\": 500, \"message\": \"Internal Server Error\" }'
-          schema:
-            $ref: '#/definitions/entities.Error'
-      summary: Create a user
-      tags:
-      - users
+      summary: Create a new user
   /api/users/{id}:
     delete:
       consumes:
@@ -81,7 +113,6 @@ paths:
       description: Delete a user with the given input data
       parameters:
       - description: User ID
-        format: int64
         in: path
         name: id
         required: true
@@ -89,26 +120,25 @@ paths:
       produces:
       - application/json
       responses:
-        "204":
-          description: No Content
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entities.User'
         "400":
-          description: '{ \"code\": 400, \"message\": \"Bad Request\" }'
+          description: Bad Request
           schema:
             $ref: '#/definitions/entities.Error'
         "500":
-          description: '{ \"code\": 500, \"message\": \"Internal Server Error\" }'
+          description: Internal Server Error
           schema:
             $ref: '#/definitions/entities.Error'
       summary: Delete a user
-      tags:
-      - users
     put:
       consumes:
       - application/json
       description: Update a user with the given input data
       parameters:
       - description: User ID
-        format: int64
         in: path
         name: id
         required: true
@@ -123,18 +153,18 @@ paths:
       - application/json
       responses:
         "200":
-          description: '{'
+          description: OK
           schema:
             $ref: '#/definitions/entities.User'
         "400":
-          description: '{ \"code\": 400, \"message\": \"Bad Request\" }'
+          description: Bad Request
           schema:
             $ref: '#/definitions/entities.Error'
         "500":
-          description: '{ \"code\": 500, \"message\": \"Internal Server Error\" }'
+          description: Internal Server Error
           schema:
             $ref: '#/definitions/entities.Error'
+      security:
+      - ApiKeyAuth: []
       summary: Update a user
-      tags:
-      - users
 swagger: "2.0"
