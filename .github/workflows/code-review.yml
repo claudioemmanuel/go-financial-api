@@ -18,9 +18,14 @@ jobs:
         uses: actions/setup-go@v2
         with:
           go-version: 1.19
+      
+      # init and download dependencies
+      - name: Init and download dependencies
+        run: go mod init review && go mod download && go mod tidy
 
-      - name: Install dependencies
-        run: go mod download
+      # Install github and openai dependencies
+      - name: Install github and openai dependencies
+        run: go get github.com/google/go-github/v41/github && go get github.com/sashabaranov/go-openai && go get golang.org/x/oauth2
 
       # run code review
       - name: Run code review
