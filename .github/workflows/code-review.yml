@@ -33,3 +33,4 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
           GITHUB_EVENT_DATA: ${{ toJson(github.event) }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
