@@ -1,0 +1,36 @@
+name: Code Review 
+
+on:
+  pull_request:
+    branches:
+      - main
+    types: [opened, synchronize, reopened]
+
+jobs:
+  code-review:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Setup Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.19
+      
+      # init and download dependencies
+      - name: Init and download dependencies
+        run: go mod init review && go mod download && go mod tidy
+
+      # Install github and openai dependencies
+      - name: Install github and openai dependencies
+        run: go get github.com/google/go-github/v41/github && go get github.com/sashabaranov/go-openai && go get golang.org/x/oauth2
+
+      # run code review
+      - name: Run code review
+        run: go run .github/actions/code_review/main.go
+        env:
+          GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
+          GITHUB_EVENT_DATA: ${{ toJson(github.event) }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
