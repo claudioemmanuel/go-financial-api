@@ -26,14 +26,14 @@ func main() {
 	// Get the token from the environment variable
 	token := os.Getenv("GITHUB_TOKEN")
 	if token == "" {
-			fmt.Println("GITHUB_TOKEN is not set")
-			os.Exit(1)
+		fmt.Println("GITHUB_TOKEN is not set")
+		os.Exit(1)
 	}
 
 	// Authenticate with the token
 	ctx := context.Background()
 	ts := oauth2.StaticTokenSource(
-			&oauth2.Token{AccessToken: token},
+		&oauth2.Token{AccessToken: token},
 	)
 	tc := oauth2.NewClient(ctx, ts)
 	client := github.NewClient(tc)
@@ -41,21 +41,21 @@ func main() {
 	// Get the pull request event data
 	eventData := os.Getenv("GITHUB_EVENT_DATA")
 	if eventData == "" {
-			fmt.Println("GITHUB_EVENT_DATA is not set")
-			os.Exit(1)
+		fmt.Println("GITHUB_EVENT_DATA is not set")
+		os.Exit(1)
 	}
-	
+
 	event, err := github.ParseWebHook("pull_request", []byte(eventData))
 	if err != nil {
-			fmt.Printf("Failed to parse webhook: %v\n", err)
-			os.Exit(1)
+		fmt.Printf("Failed to parse webhook: %v\n", err)
+		os.Exit(1)
 	}
 
 	// Perform a type assertion to convert the event to a pull request event
 	prEvent, ok := event.(*github.PullRequestEvent)
 	if !ok {
-			fmt.Println("Failed to convert event to pull request event")
-			os.Exit(1)
+		fmt.Println("Failed to convert event to pull request event")
+		os.Exit(1)
 	}
 
 	// Create the CodeReviewRequest
@@ -64,62 +64,76 @@ func main() {
 	// Perform the code review using GPT API
 	_, err = ReviewCode(ctx, client, prEvent, codeReviewRequest)
 	if err != nil {
-			fmt.Printf("Failed to review code: %v\n", err)
-			os.Exit(1)
+		fmt.Printf("Failed to review code: %v\n", err)
+		os.Exit(1)
 	}
 }
 
 func ReviewCode(ctx context.Context, client *github.Client, event *github.PullRequestEvent, request CodeReviewRequest) (*CodeReviewResponse, error) {
 
-    // Get the list of changed files in the PR
-    // files, _, err := client.PullRequests.ListFiles(ctx, event.Repo.Owner.GetLogin(), event.Repo.GetName(), event.GetNumber(), nil)
-    // if err != nil {
-    //     return nil, fmt.Errorf("error getting changed files: %w", err)
-    // }
+	// Get the list of changed files in the PR
+	files, _, err := client.PullRequests.ListFiles(ctx, event.Repo.Owner.GetLogin(), event.Repo.GetName(), event.GetNumber(), nil)
+	if err != nil {
+		return nil, fmt.Errorf("error getting changed files: %w", err)
+	}
 
-		// Get the diff of the PR
-		diff, _, err := client.PullRequests.GetRaw(ctx, event.Repo.Owner.GetLogin(), event.Repo.GetName(), event.GetNumber(), github.RawOptions{Type: github.Diff})
-		if err != nil {
-				return nil, fmt.Errorf("error getting diff: %w", err)
-		}
+	// // Get the diff of the PR
+	// diff, _, err := client.PullRequests.GetRaw(ctx, event.Repo.Owner.GetLogin(), event.Repo.GetName(), event.GetNumber(), github.RawOptions{Type: github.Diff})
+	// if err != nil {
+	// 		return nil, fmt.Errorf("error getting diff: %w", err)
+	// }
 
-    // Generate a prompt for the GPT API
-    // prompt := "Review the following code changes:\n"
-    // for _, file := range files {
-    //     prompt += fmt.Sprintf("File: %s\nPatch:\n%s\n", file.GetFilename(), file.GetPatch())
-    // }
+	// Generate a prompt for the GPT API
+	prompt := "Please review the following code changes and provide feedback on the code quality, design decisions, and potential improvements:\n"
+	for _, file := range files {
+				// Get the file name, patch and content
+				fileContent, _, _, err := client.Repositories.GetContents(ctx, event.Repo.Owner.GetLogin(), event.Repo.GetName(), file.GetFilename(), nil)
+				if err != nil {
+					return nil, fmt.Errorf("error getting file content: %w", err)
+				}
 		
-		// Generate a prompt for the GPT API
-		prompt := "Please review the following code changes and provide feedback on the code quality, design decisions, and potential improvements:\n"
-		prompt += fmt.Sprintf("Diff:\n%s\n", diff)
+				// Get the file content
+				content, err := fileContent.GetContent()
+				if err != nil {
+					return nil, fmt.Errorf("error getting file content: %w", err)
+				}
+				
+				prompt += fmt.Sprintf("File: %s\nPatch:\n%s\nContent:\n%s\n", file.GetFilename(), file.GetPatch(), content)
+				
+		// prompt += fmt.Sprintf("File: %s\nPatch:\n%s\n", file.GetFilename(), file.GetPatch())
+	}
 
-		fmt.Println(prompt)
-		
-    // Call the GPT API using the go-openai package
-    review, err := ChatGPTReview(ctx, prompt)
-    if err != nil {
-        return nil, fmt.Errorf("error getting GPT review: %w", err)
-    }
+	// // Generate a prompt for the GPT API
+	// prompt := "Please review the following code changes and provide feedback on the code quality, design decisions, and potential improvements:\n"
+	// prompt += fmt.Sprintf("Diff:\n%s\n", diff)
 
-		// Check 422 Validation Failed [{Resource:IssueComment Field:data Code:unprocessable Message:Body cannot be blank}]
-		if strings.TrimSpace(review) == "" {
-			review = "GPT is not sure about this one. Please review the code changes manually."
-		}
+	fmt.Println(prompt)
 
-    // Post the GPT-generated review as a comment on the pull request
-    comment := &github.IssueComment{
-        Body: github.String(review),
-    }
-    _, _, err = client.Issues.CreateComment(ctx, event.Repo.Owner.GetLogin(), event.Repo.GetName(), event.GetNumber(), comment)
-    if err != nil {
-        return nil, fmt.Errorf("error posting review comment: %w", err)
-    }
+	// Call the GPT API using the go-openai package
+	review, err := ChatGPTReview(ctx, prompt)
+	if err != nil {
+		return nil, fmt.Errorf("error getting GPT review: %w", err)
+	}
 
-    response := &CodeReviewResponse{
-        Comments: []string{review},
-    }
+	// Check 422 Validation Failed [{Resource:IssueComment Field:data Code:unprocessable Message:Body cannot be blank}]
+	if strings.TrimSpace(review) == "" {
+		review = "GPT is not sure about this one. Please review the code changes manually."
+	}
 
-    return response, nil
+	// Post the GPT-generated review as a comment on the pull request
+	comment := &github.IssueComment{
+		Body: github.String(review),
+	}
+	_, _, err = client.Issues.CreateComment(ctx, event.Repo.Owner.GetLogin(), event.Repo.GetName(), event.GetNumber(), comment)
+	if err != nil {
+		return nil, fmt.Errorf("error posting review comment: %w", err)
+	}
+
+	response := &CodeReviewResponse{
+		Comments: []string{review},
+	}
+
+	return response, nil
 }
 
 func ChatGPTReview(ctx context.Context, prompt string) (string, error) {
@@ -127,7 +141,7 @@ func ChatGPTReview(ctx context.Context, prompt string) (string, error) {
 	// Get the OpenAI API key from the environment variable
 	openaiAPIKey := os.Getenv("OPENAI_API_KEY")
 	if openaiAPIKey == "" {
-			return "", errors.New("OPENAI_API_KEY is not set")
+		return "", errors.New("OPENAI_API_KEY is not set")
 	}
 
 	// Initialize the OpenAI client
@@ -135,23 +149,23 @@ func ChatGPTReview(ctx context.Context, prompt string) (string, error) {
 
 	// Create a completion prompt for code review
 	completionRequest := openai.CompletionRequest{
-			Model:  "text-davinci-002",
-			Prompt: prompt,
-			MaxTokens: 150,
-			N: 1,
-			Stop: []string{"\n"},
-			Temperature: 0.8,
+		Model:       "text-davinci-002",
+		Prompt:      prompt,
+		MaxTokens:   150,
+		N:           1,
+		Stop:        []string{"\n"},
+		Temperature: 0.5,
 	}
 
 	// Request completion from the OpenAI API
 	completions, err := client.CreateCompletion(ctx, completionRequest)
 	if err != nil {
-			return "", err
+		return "", err
 	}
 
 	// Check if any completions are returned
 	if len(completions.Choices) == 0 {
-			return "", errors.New("no completions returned")
+		return "", errors.New("no completions returned")
 	}
 
 	// Get the first completion text
