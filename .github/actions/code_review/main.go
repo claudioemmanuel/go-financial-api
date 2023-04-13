@@ -90,9 +90,11 @@ func ReviewCode(ctx context.Context, client *github.Client, event *github.PullRe
     // }
 		
 		// Generate a prompt for the GPT API
-		prompt := "Review the following code changes, [Describe the changes made in this pull request. Explain the purpose and functionality of the code you added or modified, and how it affects the application.]:\n"
+		prompt := "Please review the following code changes and provide feedback on the code quality, design decisions, and potential improvements:\n"
 		prompt += fmt.Sprintf("Diff:\n%s\n", diff)
 
+		fmt.Println(prompt)
+		
     // Call the GPT API using the go-openai package
     review, err := ChatGPTReview(ctx, prompt)
     if err != nil {
@@ -138,7 +140,7 @@ func ChatGPTReview(ctx context.Context, prompt string) (string, error) {
 			MaxTokens: 150,
 			N: 1,
 			Stop: []string{"\n"},
-			Temperature: 0.5,
+			Temperature: 0.8,
 	}
 
 	// Request completion from the OpenAI API
