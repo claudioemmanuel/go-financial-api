@@ -14,14 +14,6 @@ import (
 	"github.com/sashabaranov/go-openai"
 )
 
-// type CodeReviewRequest struct {
-// 	CodeSnippet string
-// }
-
-// type CodeReviewResponse struct {
-// 	Comments []string
-// }
-
 func main() {
 	// Get the token from the environment variable
 	token := os.Getenv("GITHUB_TOKEN")
@@ -58,56 +50,40 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Create the CodeReviewRequest
-	// codeReviewRequest := CodeReviewRequest{}
-
 	// Perform the code review using GPT API
 	err = ReviewCode(ctx, client, prEvent)
 	if err != nil {
-		// err = ReviewCode(ctx, client, prEvent, codeReviewRequest); if err != nil {
 		fmt.Printf("Failed to review code: %v\n", err)
 		os.Exit(1)
 	}
 }
 
 func ReviewCode(ctx context.Context, client *github.Client, event *github.PullRequestEvent) error {
-	// func ReviewCode(ctx context.Context, client *github.Client, event *github.PullRequestEvent, request CodeReviewRequest) error {
-
 	// Get the list of changed files in the PR
 	files, _, err := client.PullRequests.ListFiles(ctx, event.Repo.Owner.GetLogin(), event.Repo.GetName(), event.GetNumber(), nil)
 	if err != nil {
 		return fmt.Errorf("error getting changed files: %w", err)
 	}
 
-	// Generate a prompt for the GPT API
-	prompt := "Please review the following code changes and provide feedback on the code quality, design decisions, and potential improvements:\n"
+	// Get the raw diff for the PR
+	diff, _, err := client.PullRequests.GetRaw(ctx, event.Repo.Owner.GetLogin(), event.Repo.GetName(), event.GetNumber(), github.RawOptions{Type: github.Diff})
+	if err != nil {
+		return fmt.Errorf("error getting raw diff: %w", err)
+	}
+
 	for _, file := range files {
-		// prompt += fmt.Sprintf("File: %s\nPatch:\n%s\n", file.GetFilename(), file.GetPatch())
-		//  Getting the file name and content
-		prompt += fmt.Sprintf("File: %s\n", file.GetFilename())
-		// Get the file content
-		fileContent, _, _, err := client.Repositories.GetContents(ctx, event.Repo.Owner.GetLogin(), event.Repo.GetName(), file.GetFilename(), nil)
-		if err != nil {
-			return fmt.Errorf("error getting file content: %w", err)
-		}
-		// Decode the file content
-		content, err := fileContent.GetContent()
-		if err != nil {
-			return fmt.Errorf("error decoding file content: %w", err)
-		}
+		// Generate a prompt for the GPT API
+		prompt := fmt.Sprintf("Please review the following code changes and provide feedback on the code quality, design decisions, and potential improvements:\nFile: %s\n", file.GetFilename())
 
-		prompt += fmt.Sprintf("Content:\n%s\n", content)
-
-		fmt.Println("prompt: ", prompt)
+		fileDiff := extractFileDiff(file.GetFilename(), diff)
+		prompt += fmt.Sprintf("Diff:\n%s\n", fileDiff)
 
 		// Call the GPT API using the go-openai package
-		review, err := ChatGPTReview(ctx, prompt)
+		review, err := chatGPTReview(ctx, prompt)
 		if err != nil {
 			return fmt.Errorf("error getting GPT review: %w", err)
 		}
 
-		fmt.Println("review: ", review)
-		
 		// Check 422 Validation Failed [{Resource:IssueComment Field:data Code:unprocessable Message:Body cannot be blank}]
 		if strings.TrimSpace(review) == "" {
 			review = "No review provided"
@@ -124,16 +100,12 @@ func ReviewCode(ctx context.Context, client *github.Client, event *github.PullRe
 		if err != nil {
 			return fmt.Errorf("error posting review comment: %w", err)
 		}
-
-		// response := &CodeReviewResponse{
-		// 	Comments: []string{review},
-		// }
 	}
 
 	return nil
 }
 
-func ChatGPTReview(ctx context.Context, prompt string) (string, error) {
+func chatGPTReview(ctx context.Context, prompt string) (string, error) {
 
 	// Get the OpenAI API key from the environment variable
 	openaiAPIKey := os.Getenv("OPENAI_API_KEY")
@@ -171,4 +143,26 @@ func ChatGPTReview(ctx context.Context, prompt string) (string, error) {
 	result := completions.Choices[0].Text
 
 	return result, nil
+}
+
+func extractFileDiff(fileName, diff string) string {
+	fileDiff := ""
+	lines := strings.Split(diff, "\n")
+	inTargetFile := false
+
+	for _, line := range lines {
+		if strings.HasPrefix(line, "diff --git") {
+			inTargetFile = false
+		}
+
+		if strings.HasPrefix(line, "+++ b/"+fileName) {
+			inTargetFile = true
+		}
+
+		if inTargetFile {
+			fileDiff += line + "\n"
+		}
+	}
+
+	return fileDiff
 }
