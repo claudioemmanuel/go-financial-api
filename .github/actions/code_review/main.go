@@ -38,14 +38,13 @@ func main() {
 	client := github.NewClient(tc)
 
 	// Get the pull request event data
-	eventPath := os.Getenv("GITHUB_EVENT_PATH")
-	if eventPath == "" {
-			fmt.Println("GITHUB_EVENT_PATH is not set")
+	eventData := os.Getenv("GITHUB_EVENT_DATA")
+	if eventData == "" {
+			fmt.Println("GITHUB_EVENT_DATA is not set")
 			os.Exit(1)
 	}
-
-	// Parse the pull request event data
-	event, err := github.ParseWebHook("pull_request", []byte(eventPath))
+	
+	event, err := github.ParseWebHook("pull_request", []byte(eventData))
 	if err != nil {
 			fmt.Printf("Failed to parse webhook: %v\n", err)
 			os.Exit(1)

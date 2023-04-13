@@ -32,3 +32,4 @@ jobs:
         run: go run .github/actions/code_review/main.go
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_EVENT_DATA: ${{ toJson(github.event) }}
