@@ -18,10 +18,9 @@ jobs:
         uses: actions/setup-go@v2
         with:
           go-version: 1.19
-      
-      # init and download dependencies
-      - name: Init and download dependencies
-        run: go mod init financial-api && go mod download && go mod tidy
+
+      - name: Install dependencies
+        run: go mod download
 
       # run code review
       - name: Run code review
