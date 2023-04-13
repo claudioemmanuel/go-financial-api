@@ -78,6 +78,7 @@ func ReviewCode(ctx context.Context, client *github.Client, event *github.PullRe
 		fileDiff := extractFileDiff(file.GetFilename(), diff)
 		prompt += fmt.Sprintf("Diff:\n%s\n", fileDiff)
 
+		fmt.Println("prompt: ", prompt)
 		// Call the GPT API using the go-openai package
 		review, err := chatGPTReview(ctx, prompt)
 		if err != nil {
@@ -123,7 +124,7 @@ func chatGPTReview(ctx context.Context, prompt string) (string, error) {
 		MaxTokens:   150,
 		N:           1,
 		Stop:        []string{"\n"},
-		Temperature: 0.5,
+		Temperature: 0.7,
 	}
 
 	// Request completion from the OpenAI API
@@ -131,8 +132,6 @@ func chatGPTReview(ctx context.Context, prompt string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-
-	fmt.Println(completions)
 
 	// Check if any completions are returned
 	if len(completions.Choices) == 0 {
