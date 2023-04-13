@@ -72,16 +72,26 @@ func main() {
 func ReviewCode(ctx context.Context, client *github.Client, event *github.PullRequestEvent, request CodeReviewRequest) (*CodeReviewResponse, error) {
 
     // Get the list of changed files in the PR
-    files, _, err := client.PullRequests.ListFiles(ctx, event.Repo.Owner.GetLogin(), event.Repo.GetName(), event.GetNumber(), nil)
-    if err != nil {
-        return nil, fmt.Errorf("error getting changed files: %w", err)
-    }
+    // files, _, err := client.PullRequests.ListFiles(ctx, event.Repo.Owner.GetLogin(), event.Repo.GetName(), event.GetNumber(), nil)
+    // if err != nil {
+    //     return nil, fmt.Errorf("error getting changed files: %w", err)
+    // }
+
+		// Get the diff of the PR
+		diff, _, err := client.PullRequests.GetRaw(ctx, event.Repo.Owner.GetLogin(), event.Repo.GetName(), event.GetNumber(), github.RawOptions{Type: github.Diff})
+		if err != nil {
+				return nil, fmt.Errorf("error getting diff: %w", err)
+		}
 
     // Generate a prompt for the GPT API
-    prompt := "Review the following code changes:\n"
-    for _, file := range files {
-        prompt += fmt.Sprintf("File: %s\nPatch:\n%s\n", file.GetFilename(), file.GetPatch())
-    }
+    // prompt := "Review the following code changes:\n"
+    // for _, file := range files {
+    //     prompt += fmt.Sprintf("File: %s\nPatch:\n%s\n", file.GetFilename(), file.GetPatch())
+    // }
+		
+		// Generate a prompt for the GPT API
+		prompt := "Review the following code changes, [Describe the changes made in this pull request. Explain the purpose and functionality of the code you added or modified, and how it affects the application.]:\n"
+		prompt += fmt.Sprintf("Diff:\n%s\n", diff)
 
     // Call the GPT API using the go-openai package
     review, err := ChatGPTReview(ctx, prompt)

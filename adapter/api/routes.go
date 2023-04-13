@@ -10,11 +10,20 @@ import (
 	"financial-api/adapter/api/controllers"
 	"financial-api/application/services"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
 
 func RegisterRoutes(r *gin.Engine, userService *services.UserService) {
 	userController := controllers.NewUserController(userService)
+
+	// CORS
+	config := cors.DefaultConfig()
+	config.AllowOrigins = []string{"*"}
+	config.AllowMethods = []string{"GET", "POST", "PUT", "DELETE"}
+	config.AllowCredentials = true
+	config.AllowHeaders = []string{"Origin", "Content-Length", "Content-Type", "Authorization"}
+	r.Use(cors.New(config))
 
 	// API
 	api := r.Group("/api")
