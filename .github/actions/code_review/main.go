@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/google/go-github/v41/github"
 	"golang.org/x/oauth2"
@@ -87,6 +88,11 @@ func ReviewCode(ctx context.Context, client *github.Client, event *github.PullRe
     if err != nil {
         return nil, fmt.Errorf("error getting GPT review: %w", err)
     }
+
+		// Check 422 Validation Failed [{Resource:IssueComment Field:data Code:unprocessable Message:Body cannot be blank}]
+		if strings.TrimSpace(review) == "" {
+			review = "GPT is not sure about this one. Please review the code changes manually."
+		}
 
     // Post the GPT-generated review as a comment on the pull request
     comment := &github.IssueComment{
