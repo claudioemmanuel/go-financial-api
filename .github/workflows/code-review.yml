@@ -1,0 +1,30 @@
+name: Code Review 
+
+on:
+  pull_request:
+    branches:
+      - main
+    types: [opened, synchronize, reopened]
+
+jobs:
+  code-review:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Setup Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.19
+      
+      # init and download dependencies
+      - name: Init and download dependencies
+        run: go mod init financial-api && go mod download && go mod tidy
+
+      # run code review
+      - name: Run code review
+        run: go run .github/actions/code_review/main.go
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
