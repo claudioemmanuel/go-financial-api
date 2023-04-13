@@ -98,15 +98,19 @@ func ReviewCode(ctx context.Context, client *github.Client, event *github.PullRe
 
 		prompt += fmt.Sprintf("Content:\n%s\n", content)
 
+		fmt.Println("prompt: ", prompt)
+
 		// Call the GPT API using the go-openai package
 		review, err := ChatGPTReview(ctx, prompt)
 		if err != nil {
 			return fmt.Errorf("error getting GPT review: %w", err)
 		}
 
+		fmt.Println("review: ", review)
+		
 		// Check 422 Validation Failed [{Resource:IssueComment Field:data Code:unprocessable Message:Body cannot be blank}]
 		if strings.TrimSpace(review) == "" {
-			review = "GPT is not sure about this one. Please review the code changes manually."
+			review = "No review provided"
 		}
 
 		result := fmt.Sprintf("ChatGPT's response about `%s`:\n %s", file.GetFilename(), review)
