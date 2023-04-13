@@ -86,21 +86,7 @@ func ReviewCode(ctx context.Context, client *github.Client, event *github.PullRe
 	// Generate a prompt for the GPT API
 	prompt := "Please review the following code changes and provide feedback on the code quality, design decisions, and potential improvements:\n"
 	for _, file := range files {
-				// Get the file name, patch and content
-				fileContent, _, _, err := client.Repositories.GetContents(ctx, event.Repo.Owner.GetLogin(), event.Repo.GetName(), file.GetFilename(), nil)
-				if err != nil {
-					return nil, fmt.Errorf("error getting file content: %w", err)
-				}
-		
-				// Get the file content
-				content, err := fileContent.GetContent()
-				if err != nil {
-					return nil, fmt.Errorf("error getting file content: %w", err)
-				}
-				
-				prompt += fmt.Sprintf("File: %s\nPatch:\n%s\nContent:\n%s\n", file.GetFilename(), file.GetPatch(), content)
-				
-		// prompt += fmt.Sprintf("File: %s\nPatch:\n%s\n", file.GetFilename(), file.GetPatch())
+		prompt += fmt.Sprintf("File: %s\nPatch:\n%s\n", file.GetFilename(), file.GetPatch())
 	}
 
 	// // Generate a prompt for the GPT API
