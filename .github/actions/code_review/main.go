@@ -14,13 +14,13 @@ import (
 	"github.com/sashabaranov/go-openai"
 )
 
-type CodeReviewRequest struct {
-	CodeSnippet string
-}
+// type CodeReviewRequest struct {
+// 	CodeSnippet string
+// }
 
-type CodeReviewResponse struct {
-	Comments []string
-}
+// type CodeReviewResponse struct {
+// 	Comments []string
+// }
 
 func main() {
 	// Get the token from the environment variable
@@ -59,67 +59,74 @@ func main() {
 	}
 
 	// Create the CodeReviewRequest
-	codeReviewRequest := CodeReviewRequest{}
+	// codeReviewRequest := CodeReviewRequest{}
 
 	// Perform the code review using GPT API
-	_, err = ReviewCode(ctx, client, prEvent, codeReviewRequest)
+	err = ReviewCode(ctx, client, prEvent)
 	if err != nil {
+		// err = ReviewCode(ctx, client, prEvent, codeReviewRequest); if err != nil {
 		fmt.Printf("Failed to review code: %v\n", err)
 		os.Exit(1)
 	}
 }
 
-func ReviewCode(ctx context.Context, client *github.Client, event *github.PullRequestEvent, request CodeReviewRequest) (*CodeReviewResponse, error) {
+func ReviewCode(ctx context.Context, client *github.Client, event *github.PullRequestEvent) error {
+	// func ReviewCode(ctx context.Context, client *github.Client, event *github.PullRequestEvent, request CodeReviewRequest) error {
 
 	// Get the list of changed files in the PR
 	files, _, err := client.PullRequests.ListFiles(ctx, event.Repo.Owner.GetLogin(), event.Repo.GetName(), event.GetNumber(), nil)
 	if err != nil {
-		return nil, fmt.Errorf("error getting changed files: %w", err)
+		return fmt.Errorf("error getting changed files: %w", err)
 	}
-
-	// // Get the diff of the PR
-	// diff, _, err := client.PullRequests.GetRaw(ctx, event.Repo.Owner.GetLogin(), event.Repo.GetName(), event.GetNumber(), github.RawOptions{Type: github.Diff})
-	// if err != nil {
-	// 		return nil, fmt.Errorf("error getting diff: %w", err)
-	// }
 
 	// Generate a prompt for the GPT API
 	prompt := "Please review the following code changes and provide feedback on the code quality, design decisions, and potential improvements:\n"
 	for _, file := range files {
-		prompt += fmt.Sprintf("File: %s\nPatch:\n%s\n", file.GetFilename(), file.GetPatch())
+		// prompt += fmt.Sprintf("File: %s\nPatch:\n%s\n", file.GetFilename(), file.GetPatch())
+		//  Getting the file name and content
+		prompt += fmt.Sprintf("File: %s\n", file.GetFilename())
+		// Get the file content
+		fileContent, _, _, err := client.Repositories.GetContents(ctx, event.Repo.Owner.GetLogin(), event.Repo.GetName(), file.GetFilename(), nil)
+		if err != nil {
+			return fmt.Errorf("error getting file content: %w", err)
+		}
+		// Decode the file content
+		content, err := fileContent.GetContent()
+		if err != nil {
+			return fmt.Errorf("error decoding file content: %w", err)
+		}
+
+		prompt += fmt.Sprintf("Content:\n%s\n", content)
+
+		// Call the GPT API using the go-openai package
+		review, err := ChatGPTReview(ctx, prompt)
+		if err != nil {
+			return fmt.Errorf("error getting GPT review: %w", err)
+		}
+
+		// Check 422 Validation Failed [{Resource:IssueComment Field:data Code:unprocessable Message:Body cannot be blank}]
+		if strings.TrimSpace(review) == "" {
+			review = "GPT is not sure about this one. Please review the code changes manually."
+		}
+
+		result := fmt.Sprintf("ChatGPT's response about `%s`:\n %s", file.GetFilename(), review)
+
+		// Post the GPT-generated review as a comment on the pull request
+		comment := &github.IssueComment{
+			Body: github.String(result),
+		}
+
+		_, _, err = client.Issues.CreateComment(ctx, event.Repo.Owner.GetLogin(), event.Repo.GetName(), event.GetNumber(), comment)
+		if err != nil {
+			return fmt.Errorf("error posting review comment: %w", err)
+		}
+
+		// response := &CodeReviewResponse{
+		// 	Comments: []string{review},
+		// }
 	}
 
-	// // Generate a prompt for the GPT API
-	// prompt := "Please review the following code changes and provide feedback on the code quality, design decisions, and potential improvements:\n"
-	// prompt += fmt.Sprintf("Diff:\n%s\n", diff)
-
-	fmt.Println(prompt)
-
-	// Call the GPT API using the go-openai package
-	review, err := ChatGPTReview(ctx, prompt)
-	if err != nil {
-		return nil, fmt.Errorf("error getting GPT review: %w", err)
-	}
-
-	// Check 422 Validation Failed [{Resource:IssueComment Field:data Code:unprocessable Message:Body cannot be blank}]
-	if strings.TrimSpace(review) == "" {
-		review = "GPT is not sure about this one. Please review the code changes manually."
-	}
-
-	// Post the GPT-generated review as a comment on the pull request
-	comment := &github.IssueComment{
-		Body: github.String(review),
-	}
-	_, _, err = client.Issues.CreateComment(ctx, event.Repo.Owner.GetLogin(), event.Repo.GetName(), event.GetNumber(), comment)
-	if err != nil {
-		return nil, fmt.Errorf("error posting review comment: %w", err)
-	}
-
-	response := &CodeReviewResponse{
-		Comments: []string{review},
-	}
-
-	return response, nil
+	return nil
 }
 
 func ChatGPTReview(ctx context.Context, prompt string) (string, error) {
@@ -148,6 +155,8 @@ func ChatGPTReview(ctx context.Context, prompt string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+
+	fmt.Println(completions)
 
 	// Check if any completions are returned
 	if len(completions.Choices) == 0 {
