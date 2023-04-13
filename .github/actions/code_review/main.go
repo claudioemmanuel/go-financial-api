@@ -73,12 +73,11 @@ func ReviewCode(ctx context.Context, client *github.Client, event *github.PullRe
 
 	for _, file := range files {
 		// Generate a prompt for the GPT API
-		prompt := fmt.Sprintf("Please review the following code changes and provide feedback on the code quality, design decisions, and potential improvements:\nFile: %s\n", file.GetFilename())
+		prompt := fmt.Sprintf("Please explain the following code changes and review the following code changes and provide feedback on the code quality, design decisions, and potential improvements\nFile: %s\n", file.GetFilename())
 
 		fileDiff := extractFileDiff(file.GetFilename(), diff)
 		prompt += fmt.Sprintf("Diff:\n%s\n", fileDiff)
 
-		fmt.Println("prompt: ", prompt)
 		// Call the GPT API using the go-openai package
 		review, err := chatGPTReview(ctx, prompt)
 		if err != nil {
