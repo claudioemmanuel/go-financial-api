@@ -27,6 +27,7 @@ func NewUserController(userService *services.UserService) *UserController {
 // @Success 200 {array} entities.User
 // @Failure 500 {object} entities.Error
 // @Router /api/users [get]
+// @Security ApiKeyAuth
 func (c *UserController) GetAll(ctx *gin.Context) {
 	users, err := c.userService.FindAll()
 	if err != nil {
@@ -45,6 +46,7 @@ func (c *UserController) GetAll(ctx *gin.Context) {
 // @Success 201 {object} entities.User
 // @Failure 400 {object} entities.Error
 // @Router /api/users [post]
+// @Security ApiKeyAuth
 func (c *UserController) Create(ctx *gin.Context) {
 	var userDto dtos.UserDTO
 	err := ctx.ShouldBindJSON(&userDto)
@@ -110,6 +112,7 @@ func (c *UserController) Update(ctx *gin.Context) {
 // @Failure 400 {object} entities.Error
 // @Failure 500 {object} entities.Error
 // @Router /api/users/{id} [delete]
+// @Security ApiKeyAuth
 func (c *UserController) Delete(ctx *gin.Context) {
 	id := ctx.Param("id")
 

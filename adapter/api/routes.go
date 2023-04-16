@@ -1,6 +1,7 @@
 package api
 
 import (
+	"financial-api/application/services"
 	_ "financial-api/docs"
 	"financial-api/middleware"
 
@@ -8,14 +9,20 @@ import (
 	ginSwagger "github.com/swaggo/gin-swagger"
 
 	"financial-api/adapter/api/controllers"
-	"financial-api/application/services"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
 
-func RegisterRoutes(r *gin.Engine, userService *services.UserService) {
+func RegisterRoutes(
+	r *gin.Engine,
+	userService *services.UserService,
+	accountService *services.AccountService,
+) {
+
+	// Controllers
 	userController := controllers.NewUserController(userService)
+	accountController := controllers.NewAccountController(accountService)
 
 	// CORS
 	config := cors.DefaultConfig()
@@ -47,10 +54,14 @@ func RegisterRoutes(r *gin.Engine, userService *services.UserService) {
 			protected.POST("/users", userController.Create)
 			protected.PUT("/users/:id", userController.Update)
 			protected.DELETE("/users/:id", userController.Delete)
+
+			// Accounts
+			protected.GET("/accounts", accountController.GetAll)
+			protected.POST("/accounts", accountController.Create)
+			protected.PUT("/accounts/:id", accountController.Update)
+			protected.DELETE("/accounts/:id", accountController.Delete)
 		}
 	}
-
-	r.POST("/users", userController.Create)
 
 	// Swagger
 	swaggerConfig := &ginSwagger.Config{
