@@ -41,4 +41,8 @@ func TestUserRepository_FindAll(t *testing.T) {
 	err := userRepo.Create(&user)
 	assert.Nil(t, err)
 	assert.NotZero(t, user.ID)
+
+	users, err := userRepo.FindAll()
+	assert.Nil(t, err)
+	assert.NotZero(t, len(users))
 }

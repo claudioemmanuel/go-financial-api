@@ -17,9 +17,16 @@ func SetupTestDB(t *testing.T) *gorm.DB {
 		t.Fatalf("Failed to connect to the test database: %v", err.Error())
 	}
 
-	err = db.AutoMigrate(&entities.User{})
-	if err != nil {
-		t.Fatalf("Failed to migrate the test database: %v", err.Error())
+	entities := []interface{}{
+		&entities.User{},
+		&entities.Account{},
+	}
+
+	for _, entity := range entities {
+		err := db.AutoMigrate(entity)
+		if err != nil {
+			t.Fatalf("Failed to migrate the test database: %v", err.Error())
+		}
 	}
 
 	return db

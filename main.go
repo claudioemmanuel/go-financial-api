@@ -27,13 +27,17 @@ func main() {
 
 	// Dependency injection
 	userRepository := g.NewUserRepositoryGorm(db)
+	accountRepository := g.NewAccountRepositoryGorm(db)
+
+	// Create the services
 	userService := services.NewUserService(userRepository)
+	accountService := services.NewAccountService(accountRepository)
 
 	// Set up the Gin web framework
 	r := gin.Default()
 
-	// Register routes
-	api.RegisterRoutes(r, userService)
+	// Register routes pass the array of services
+	api.RegisterRoutes(r, userService, accountService)
 
 	// Start the server
 	r.Run()

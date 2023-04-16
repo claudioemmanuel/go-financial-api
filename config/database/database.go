@@ -52,6 +52,11 @@ func Connect() (*gorm.DB, error) {
 		return nil, fmt.Errorf("could not migrate database: %v", err)
 	}
 
+	err = Seed(db)
+	if err != nil {
+		return nil, fmt.Errorf("could not seed database: %v", err)
+	}
+
 	return db, nil
 }
 

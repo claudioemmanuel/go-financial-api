@@ -9,10 +9,21 @@ import (
 
 func Migrate(db *gorm.DB) error {
 
-	err := db.AutoMigrate(&entities.User{})
-	if err != nil {
-		fmt.Println("Could not migrate User entity")
-		return err
+	// get all entities
+	entities := []interface{}{
+		&entities.User{},
+		&entities.Account{},
+	}
+
+	// migrate all entities
+	for _, entity := range entities {
+		err := db.AutoMigrate(entity)
+		if err != nil {
+			fmt.Printf("Could not migrate %s entity \n", entity)
+			return err
+		}
+
+		fmt.Printf("Migrated %s entity \n", entity)
 	}
 
 	return nil
