@@ -73,7 +73,7 @@ func ReviewCode(ctx context.Context, client *github.Client, event *github.PullRe
 
 	for _, file := range files {
 		// Generate a prompt for the GPT API
-		prompt := fmt.Sprintf("Please explain the following code changes\nFile: %s\n", file.GetFilename())
+		prompt := fmt.Sprintf("Explain the code changes made to this file, if necessary provide feedback on possible improvements\nFile: %s\n", file.GetFilename())
 
 		fileDiff := extractFileDiff(file.GetFilename(), diff)
 		prompt += fmt.Sprintf("Diff:\n%s\n", fileDiff)
@@ -86,7 +86,7 @@ func ReviewCode(ctx context.Context, client *github.Client, event *github.PullRe
 
 		// Check 422 Validation Failed [{Resource:IssueComment Field:data Code:unprocessable Message:Body cannot be blank}]
 		if strings.TrimSpace(review) == "" {
-			review = "No review provided"
+			continue
 		}
 
 		result := fmt.Sprintf("ChatGPT's response about `%s`:\n %s", file.GetFilename(), review)
